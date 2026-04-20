@@ -1,0 +1,72 @@
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+data <- read.csv(file.choose(), header = T)
+head(data)
+tail(data)
+
+data %>%
+  group_by(gender) %>%
+  summarise(
+    avg_math = mean(math_score),
+    avg_science = mean(science_score),
+    avg_english = mean(english_score)
+  )
+
+data <- data %>%
+  mutate(total_score = math_score + science_score + english_score)
+
+#Top 5 Stuents
+data %>%
+  arrange(desc(total_score)) %>%
+  head(5)
+
+long_data <- data %>%
+  pivot_longer(
+    cols = c(math_score, science_score, english_score),
+    names_to = "subject",
+    values_to = "score"
+  )
+
+ggplot(data, aes(x = study_hours, y = total_score)) +
+  geom_point(color = "blue") +
+  geom_smooth(method = "lm") +
+  labs(title = "Study Hours vs Total Score")
+
+long_data %>%
+  group_by(subject) %>%
+  summarise(avg_score = mean(score)) %>%
+  ggplot(aes(x = subject, y = avg_score, fill = subject)) +
+  geom_bar(stat = "identity") +
+  theme_minimal()
+
+ggplot(data, aes(x = attendance, y = total_score, color = gender)) +
+  geom_point() +
+  labs(title = "Attendance vs Total Score")
+
+model <- lm(total_score ~ study_hours + attendance, data = data)
+
+summary(model)
+
+new_students <- data.frame(
+  study_hours = c(2, 4, 6),
+  attendance = c(70, 85, 95)
+)
+
+predictions <- predict(model, newdata = new_students)
+
+cbind(new_students, predicted_score = predictions)
+
+ggplot(data, aes(x = study_hours, y = total_score)) +
+  geom_point(color = "darkgreen") +
+  geom_smooth(method = "lm", se = TRUE, color = "red") +
+  labs(title = "Linear Regression: Study Hours vs Total Score")
+
+data$predicted <- predict(model)
+
+ggplot(data, aes(x = total_score, y = predicted)) +
+  geom_point(color = "blue") +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  labs(title = "Actual vs Predicted Scores")
+
